@@ -7,6 +7,5 @@ build:
   artifacts:
     '*': /
 run:
-  scriptName: ./
-  persistenceMount: /data
+  command: npm run start
   containerPort: 3000
