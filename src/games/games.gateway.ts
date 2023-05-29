@@ -42,7 +42,7 @@ export class GamesGateway implements OnGatewayConnection {
                 });
             }
             else {
-                this.sendError(client, 'Вы были удалены');
+                this.sendError(client, 'U were dropout');
                 client.conn.close();
             }
         }
