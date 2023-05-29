@@ -34,10 +34,17 @@ export class GamesGateway implements OnGatewayConnection {
             const client = this.server.sockets.sockets.get(socket);
             const {code, token} = client.handshake.query;
             const {id} = this.tokenService.verifyToken(token as string);
-            client.emit('game.state', {
-                event: 'game.state.user',
-                data: {state: await this.gameService.getUserState(id, code as string)}
-            });
+            const userState = await this.gameService.getUserState(id, code as string);
+            if(userState) {
+                client.emit('game.state', {
+                    event: 'game.state.user',
+                    data: {state: userState}
+                });
+            }
+            else {
+                this.sendError(client, 'Вы были удалены');
+                client.conn.close();
+            }
         }
     }
 
@@ -113,7 +120,6 @@ export class GamesGateway implements OnGatewayConnection {
                 return;
             }
             client.join(code);
-            this.server.in(code).emit('room.players', {event: 'room.newConnection', data: {users, newUser}});
             await this.sendGameState(code as string);
         } catch (e) {
             this.sendError(client, 'Invalid token');

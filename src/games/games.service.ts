@@ -19,15 +19,15 @@ export class GamesService {
 
     @Cron('0 0 12 * * *')
     async deleteOldGames() {
-        const rooms = await this.roomModel.find({$or:[{created: {$lte: subDays(new Date(), 2)}},{status:'ended'}]}).populate('users.user')
+        const rooms = await this.roomModel.find({$or: [{created: {$lte: subDays(new Date(), 2)}}, {status: 'ended'}]}).populate('users.user')
         if (rooms.length) {
-            try{
+            try {
                 const roomsIdToDelete = rooms.map(room => room.id);
                 const usersIdToDelete = rooms.map(room => room.users.map(user => user.user.id)).flat();
                 await this.userModel.deleteMany({_id: {$in: usersIdToDelete}});
                 await this.roomModel.deleteMany({_id: {$in: roomsIdToDelete}});
+            } catch (e) {
             }
-            catch (e) {}
         }
     }
 
@@ -38,6 +38,8 @@ export class GamesService {
             status,
             users: users.map((user: { user, cards }) => ({
                 id: user.user.id,
+                imgURL: user.user.imgURL,
+                isHost: user.user.isHost,
                 name: user.user.name,
                 cardsCount: user.cards.length
             })),
@@ -57,7 +59,7 @@ export class GamesService {
 
     async initGame(code: string) {
         const room = await this.roomModel.findOne({code}).populate('users.user');
-        if(room.status!='created') {
+        if (room.status != 'created') {
             return;
         }
         const cards = await this.cardModel.find({});
@@ -92,7 +94,7 @@ export class GamesService {
 
     async deleteUser(code: string, id: string) {
         const room = await this.roomModel.findOne({code}).populate('users.user');
-        if (room.options.currentUser === id) {
+        if (room.options.currentUser === id && room.status === 'inProgress') {
             this.shiftMovePart(room, id, 1);
             try {
                 this.schedulerRegistry.deleteTimeout(id);
@@ -100,8 +102,10 @@ export class GamesService {
             } catch (e) {
             }
         }
-        const userCards = room.users.find((user) => user.user.id === id).cards;
-        room.options.deck = [...room.options.deck, ...userCards];
+        if (room.status === 'inProgress') {
+            const userCards = room.users.find((user) => user.user.id === id).cards;
+            room.options.deck = [...room.options.deck, ...userCards];
+        }
         room.users = room.users.filter(user => user.user.id !== id);
         await room.save();
         await this.userModel.findByIdAndDelete(id);

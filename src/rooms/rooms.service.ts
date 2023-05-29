@@ -5,7 +5,7 @@ import {Room} from "./room.model";
 import {UsersService} from "../users/users.service";
 import {nanoid} from 'nanoid';
 import {TokensService} from "../tokens/tokens.service";
-import {subDays, toDate} from "date-fns";
+import {toDate} from "date-fns";
 
 @Injectable()
 export class RoomsService {
@@ -32,14 +32,15 @@ export class RoomsService {
     }
 
     async connectToRoom(name: string, code: string) {
-        const room = await (await this.findRoom(code)).populate('users.user', "name");
+        let room = await this.findRoom(code);
         if (!room) {
             return null;
         }
+        room = await (room).populate('users.user', "name");
         if (room.users.some((user: { user: { name: string } }) => user.user.name === name)) {
             return 'conflict';
         }
-        if (room.users.length > 10) {
+        if (room.users.length >= 10) {
             return 'tooMany';
         }
         if (room.status !== 'created') {
