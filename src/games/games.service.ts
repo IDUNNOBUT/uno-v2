@@ -8,6 +8,7 @@ import {MoveDto} from "./dto/move.dto";
 import {GamesGateway} from "./games.gateway";
 import {subDays} from 'date-fns';
 import {User} from "../users/user.model";
+import {isArray} from "util";
 
 @Injectable()
 export class GamesService {
@@ -72,8 +73,9 @@ export class GamesService {
         room.status = 'inProgress';
         room.options.order = 'forward';
         room.options.currentUser = room.users[0].user.id;
+        room.options.chosenColor = isArray(room.options.discard.at(-1)) ? ['red','blue','yellow','green'][Math.floor(Math.random() * 4)] : '';
         await room.save();
-        this.waitForMove(code, room.options.currentUser.toString(), this.TIMEOUT);
+        // this.waitForMove(code, room.options.currentUser.toString(), this.TIMEOUT);
     }
 
     shuffleArray(array: Array<Card>) {
@@ -98,7 +100,7 @@ export class GamesService {
             this.shiftMovePart(room, id, 1);
             try {
                 this.schedulerRegistry.deleteTimeout(id);
-                this.waitForMove(code, room.options.currentUser.toString(), this.TIMEOUT);
+                // this.waitForMove(code, room.options.currentUser.toString(), this.TIMEOUT);
             } catch (e) {
             }
         }
@@ -126,7 +128,9 @@ export class GamesService {
             cardsFromDiscard = this.shuffleArray(cardsFromDiscard);
             room.options.deck = [...room.options.deck, ...cardsFromDiscard];
         }
-        this.commonMovePart(room, id, cardId);
+        if(dto.action !=='takeFromDeck') {
+            this.commonMovePart(room, id, cardId);
+        }
         const currentUser = room.users.find(user => user.user.id === id);
         if (!currentUser.cards.length) {
             room.status = 'ended';
@@ -158,7 +162,8 @@ export class GamesService {
             case 'takeTwo': {
                 room.options.chosenColor = '';
                 this.shiftMovePart(room, id, 1);
-                this.takeFromDeckMovePart(room, room.options.currentUser, 2);
+                console.log(room.options.currentUser);
+                this.takeFromDeckMovePart(room, room.options.currentUser.toString(), 2);
                 break;
             }
             case 'changeColor': {
@@ -168,13 +173,14 @@ export class GamesService {
             }
             case 'changeColorTakeFour': {
                 this.shiftMovePart(room, id, 1);
-                this.takeFromDeckMovePart(room, room.options.currentUser, 4);
+                console.log(room.options.currentUser);
+                this.takeFromDeckMovePart(room, room.options.currentUser.toString(), 4);
                 room.options.chosenColor = chosenColor;
                 break;
             }
         }
         await room.save();
-        this.waitForMove(code, room.options.currentUser.toString(), this.TIMEOUT);
+        // this.waitForMove(code, room.options.currentUser.toString(), this.TIMEOUT);
     }
 
     commonMovePart(room, id: string, cardId: string) {
