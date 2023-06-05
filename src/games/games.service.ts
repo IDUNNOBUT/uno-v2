@@ -73,7 +73,7 @@ export class GamesService {
         room.status = 'inProgress';
         room.options.order = 'forward';
         room.options.currentUser = room.users[0].user.id;
-        room.options.chosenColor = isArray(room.options.discard.at(-1)) ? ['red','blue','yellow','green'][Math.floor(Math.random() * 4)] : '';
+        room.options.chosenColor = isArray(room.options.discard.at(-1).color) ? ['red','blue','yellow','green'][Math.floor(Math.random() * 4)] : '';
         await room.save();
         // this.waitForMove(code, room.options.currentUser.toString(), this.TIMEOUT);
     }
