@@ -75,7 +75,7 @@ export class GamesService {
         room.options.currentUser = room.users[0].user.id;
         room.options.chosenColor = isArray(room.options.discard.at(-1).color) ? ['red','blue','yellow','green'][Math.floor(Math.random() * 4)] : '';
         await room.save();
-        // this.waitForMove(code, room.options.currentUser.toString(), this.TIMEOUT);
+        this.waitForMove(code, room.options.currentUser.toString(), this.TIMEOUT);
     }
 
     shuffleArray(array: Array<Card>) {
@@ -100,7 +100,7 @@ export class GamesService {
             this.shiftMovePart(room, id, 1);
             try {
                 this.schedulerRegistry.deleteTimeout(id);
-                // this.waitForMove(code, room.options.currentUser.toString(), this.TIMEOUT);
+                this.waitForMove(code, room.options.currentUser.toString(), this.TIMEOUT);
             } catch (e) {
             }
         }
@@ -162,7 +162,6 @@ export class GamesService {
             case 'takeTwo': {
                 room.options.chosenColor = '';
                 this.shiftMovePart(room, id, 1);
-                console.log(room.options.currentUser);
                 this.takeFromDeckMovePart(room, room.options.currentUser.toString(), 2);
                 break;
             }
@@ -173,14 +172,13 @@ export class GamesService {
             }
             case 'changeColorTakeFour': {
                 this.shiftMovePart(room, id, 1);
-                console.log(room.options.currentUser);
                 this.takeFromDeckMovePart(room, room.options.currentUser.toString(), 4);
                 room.options.chosenColor = chosenColor;
                 break;
             }
         }
         await room.save();
-        // this.waitForMove(code, room.options.currentUser.toString(), this.TIMEOUT);
+        this.waitForMove(code, room.options.currentUser.toString(), this.TIMEOUT);
     }
 
     commonMovePart(room, id: string, cardId: string) {
@@ -195,7 +193,7 @@ export class GamesService {
         const usersCount = room.users.length;
         room.options.currentUser = room.options.order === 'forward' ?
             room.users.at((index + shift) % usersCount).user.id
-            : room.users.at(Math.abs((index - shift) % usersCount)).user.id;
+            : room.users.at(Math.abs((index - shift) + usersCount) % usersCount).user.id;
     }
 
     takeFromDeckMovePart(room, id: string, quantity: number) {
